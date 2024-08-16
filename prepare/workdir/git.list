@@ -1,0 +1,9 @@
+[kirigami-addons]
+url=https://invent.kde.org/libraries/kirigami-addons.git
+version=v0.11.0
+commit=
+
+[francis]
+url=https://invent.kde.org/utilities/francis.git
+version=v1.0.1
+commit=

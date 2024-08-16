@@ -1,0 +1,6 @@
+PACKAGE_ID=org.kde.francis
+PACKAGE_NAME=Francis
+PACKAGE_VERSION=1.0.1.0
+PACKAGE_DESCRIPTION=Francis uses the well-known pomodoro technique to help you get more productive.
+COMMAND=
+COMMAND_BIN=francis

@@ -1,0 +1,147 @@
+version: "1"
+
+package:
+  id: org.kde.francis
+  name: Francis
+  version: 1.0.1.0
+  kind: app
+  description: |
+    Francis uses the well-known pomodoro technique to help you get more productive.
+
+base: org.deepin.foundation/23.0.0
+runtime: org.deepin.Runtime/23.0.1
+
+command:
+  - /opt/apps/org.kde.francis/files/bin/francis
+
+
+build: |
+  # install packages
+  install_pkg=$(realpath "./install_pkg.sh")
+  include_pkg='libc6'
+  exclude_pkg=''
+  bash $install_pkg -i -R -d $(realpath 'linglong/sources') -p $PREFIX -I \"$include_pkg\" -E \"$exclude_pkg\"
+  
+  # build kirigami-addons
+  cd /project/linglong/sources/kirigami-addons.git
+  cmake -Bbuild \
+        -DCMAKE_INSTALL_PREFIX=build-ins \
+        -DCMAKE_INSTALL_LIBDIR=$PREFIX/lib/$TRIPLET
+  cmake --build build
+  cmake --install build
+  
+  # build francis
+  cd /project/linglong/sources/francis.git
+  # fix Qml import path
+  src='./src/main.cpp'
+  sed -i "/QQmlApplicationEngine engine;/a \    engine.addImportPath(QString(\"/runtime/lib/$TRIPLET/qt5/qml/\"));" $src
+  sed -i "/QQmlApplicationEngine engine;/a \    engine.addImportPath(QString(\"$PREFIX/lib/$TRIPLET/qt5/qml/\"));" $src
+  sed -i "/QQmlApplicationEngine engine;/a \    engine.addImportPath(QString(\"$PREFIX/lib/$TRIPLET/qml/\"));" $src
+  cmake -Bbuild \
+        -DCMAKE_INSTALL_PREFIX=$PREFIX \
+        -DCMAKE_INSTALL_RPATH=$PREFIX/lib/$TRIPLET
+  cmake --build build
+  cmake --install build
+  
+  # fix interpreter
+  patchelf --set-interpreter "$PREFIX/lib/$TRIPLET/ld-linux-x86-64.so.2" "$PREFIX/bin/francis"
+    
+  # uninstall dev packages
+  bash $install_pkg -u -r '\-dev'
+
+
+sources:
+  # kirigami-addons
+  - kind: git
+    url: https://invent.kde.org/libraries/kirigami-addons.git
+    version: v0.11.0
+    commit: 42f0df909b82e6a928193db088003f275493e262
+  # francis
+  - kind: git
+    url: https://invent.kde.org/utilities/francis.git
+    version: v1.0.1
+    commit: d50d4da85f24a2f40340dab287bd76cd13169bb2
+  # files
+  # packages: kirigami2-dev,libkf5kirigami2-5,libkf5coreaddons-dev,libkf5coreaddons-dev-bin,libkf5coreaddons5,libkf5config-dev,libkf5config-bin,libkf5config-dev-bin,libkf5configcore5,libkf5configgui5,libkf5configqml5,libkf5i18n-dev,libkf5i18n5,libkf5i18nlocaledata5,libkf5notifications-dev,libkf5notifications5,libkf5dbusaddons-dev,libkf5dbusaddons5,libkf5dbusaddons-data,qml-module-org-kde-kirigami2,qml-module-org-kde-notifications,libkf5windowsystem5,libcanberra0,libdbusmenu-qt5-2,libvorbisfile3,libtdb1,libc6
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/kirigami2/kirigami2-dev_5.103.0-1_amd64.deb
+    digest: 6c3748ff0becd91a803ea13c68e6143f005c688d595f25eaa7c1510ba72df3ac
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/kirigami2/libkf5kirigami2-5_5.103.0-1_amd64.deb
+    digest: 3d6726f5d5115e42596550ef61be1eee4458ee1e8a0b81457033e62989bc4d98
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/kcoreaddons/libkf5coreaddons-dev_5.103.0-1_amd64.deb
+    digest: 990c4afdae209b8b10e22fd9fb57f934e587f2600b43f3a29381f0bc9d62e256
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/kcoreaddons/libkf5coreaddons-dev-bin_5.103.0-1_amd64.deb
+    digest: e44897d4ce38767d0221ce1694cc69bb3c5ed2e2914cb1f340b4a9a2246a343c
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/kcoreaddons/libkf5coreaddons5_5.103.0-1_amd64.deb
+    digest: d29f2e93411c71dbc5bf3552c88a9e3e11cc488b156e969e154418070e46e686
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/kconfig/libkf5config-dev_5.103.0-2_amd64.deb
+    digest: 787121c02ea1a9f14bde15d89db67095339f4d764ab11f521e78aae31afc3329
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/kconfig/libkf5config-bin_5.103.0-2_amd64.deb
+    digest: 5fa053a9c84859417b880081d69d091d604e7784ecd1acb8ee60d39e7ed16a45
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/kconfig/libkf5config-dev-bin_5.103.0-2_amd64.deb
+    digest: 876b81964ef9810ac768290e3a6522a8b644120dbdb50badc5a7d29635fbbd27
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/kconfig/libkf5configcore5_5.103.0-2_amd64.deb
+    digest: f56cbcb73cbbbfd138b6469f6c9810d1a7843659d846d39a9763da94cfcd591a
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/kconfig/libkf5configgui5_5.103.0-2_amd64.deb
+    digest: 9cb474c57a0c6da09b97a15e88c5a151df5df301e7f47e43e07ca4779293ceaa
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/kconfig/libkf5configqml5_5.103.0-2_amd64.deb
+    digest: eb204eb42c03d68721e66b54281c5c5a08ccfe1815e34d4b1a4a35d8f5f87140
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/ki18n/libkf5i18n-dev_5.103.0-1_amd64.deb
+    digest: 8544a919761badfe3f15cbd9caaea6dd90b94755aad9c456a181b4d0490888ef
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/ki18n/libkf5i18n5_5.103.0-1_amd64.deb
+    digest: 100702bfd60d507e1bab5e5fb868f8ebe56dd634394cc0cd29ca2aadf7cca04f
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/ki18n/libkf5i18nlocaledata5_5.103.0-1_amd64.deb
+    digest: 977f247705fb752899962c4c5b38d0402d9540b8f18494ae0f9578a051cd060f
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/knotifications/libkf5notifications-dev_5.103.0-1_amd64.deb
+    digest: ec2689550850e8ac53d32656cdfadf8a6a7a5c5abd8816146152712f85ef1936
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/knotifications/libkf5notifications5_5.103.0-1_amd64.deb
+    digest: 23aced489bbb319ee18083cd90e3a9dd67a8d5062528d096e594412a9260066f
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/kdbusaddons/libkf5dbusaddons-dev_5.103.0-1_amd64.deb
+    digest: a1d140a5abe078cd424db31f15dd7ac75fa505c796455d70c821c09f3995df0c
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/kdbusaddons/libkf5dbusaddons5_5.103.0-1_amd64.deb
+    digest: 31269a781a662bfe1dba131a3f98f90aa41d7eb440b5bb1513b80ac00a9ba089
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/kdbusaddons/libkf5dbusaddons-data_5.103.0-1_all.deb
+    digest: e7f0f387f28345c64a15cb803223fa6902246a0168e937ad4503d231e8e61da3
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/kirigami2/qml-module-org-kde-kirigami2_5.103.0-1_amd64.deb
+    digest: 24b6b8c325bc6c5c057dd637f681c253de99033e973bcd47d10a2797a66d5ba9
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/knotifications/qml-module-org-kde-notifications_5.103.0-1_amd64.deb
+    digest: b5ef4b61ce3de0b7fbd255a837945723320e4f8e5e6f067bc73489e0ef10113f
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/k/kwindowsystem/libkf5windowsystem5_5.103.0-1_amd64.deb
+    digest: 212ccf98b11d8e2fef1376e121ba7303e8bdf8ab41ea33f2bd8a12bfb938bfad
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/libc/libcanberra/libcanberra0_0.30-8_amd64.deb
+    digest: 5b57379e6e7c3366bfb17db1b74a13b611b338a94d3db83615cf36a77e247548
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/libd/libdbusmenu-qt/libdbusmenu-qt5-2_0.9.3+16.04.20160218-deepin2+rb2_amd64.deb
+    digest: e67cf0ea0d71c7ddd800e937657f1611b8903273c9abf57faadd3a130264b64c
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/libv/libvorbis/libvorbisfile3_1.3.7-1_amd64.deb
+    digest: 50a8cfed14d73f5e15fe13de7faae7d05b5e3a5afa79bac1ed373cf8487213a1
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/t/tdb/libtdb1_1.4.10-1_amd64.deb
+    digest: e343fff22e625d2ee4f9e4ab591a235a0ca3dec7f6788f2de4ab7f5fbff955ab
+  - kind: file
+    url: https://mirrors.ustc.edu.cn/deepin/beige/pool/main/g/glibc/libc6_2.38-6deepin4_amd64.deb
+    digest: 528cd175b88a701953e4271e0528afbc1f8e815b9710e4bf5d48d35a2723f92b
+  
